@@ -3,14 +3,22 @@ import { useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useGenerateCaptions, useGetFestivalTrends, useGenerateWeeklyCalendar } from "@workspace/api-client-react";
+import {
+  useGenerateCaptions,
+  useGetFestivalTrends,
+  useGenerateWeeklyCalendar,
+  useGeneratePostImage,
+} from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, PenTool, Copy, CheckCircle2, Calendar, Zap, ChevronDown, ChevronUp, Sparkles } from "lucide-react";
+import {
+  Loader2, PenTool, Copy, CheckCircle2, Calendar, Zap,
+  ChevronDown, ChevronUp, Sparkles, ImageIcon, Download, RefreshCw,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 const formSchema = z.object({
@@ -40,6 +48,13 @@ type CalendarDay = {
   postingTime: string;
 };
 
+type ActiveContext = {
+  description: string;
+  platform: string;
+  theme: string;
+  postType: string;
+};
+
 export default function Captions() {
   const [, setLocation] = useLocation();
   const [profileId, setProfileId] = useState<string | null>(null);
@@ -47,6 +62,7 @@ export default function Captions() {
   const [copiedId, setCopiedId] = useState<number | null>(null);
   const [showCustomForm, setShowCustomForm] = useState(false);
   const [activeLabel, setActiveLabel] = useState<string | null>(null);
+  const [activeCtx, setActiveCtx] = useState<ActiveContext | null>(null);
   const [cachedDays, setCachedDays] = useState<CalendarDay[]>([]);
   const autoFired = useRef(false);
 
@@ -64,16 +80,13 @@ export default function Captions() {
   }, [setLocation]);
 
   const generateCaptions = useGenerateCaptions();
+  const generateImage = useGeneratePostImage();
   const festivalMutation = useGetFestivalTrends();
   const calendarMutation = useGenerateWeeklyCalendar();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      postDescription: "",
-      platform: "Instagram",
-      tone: "Promotional",
-    },
+    defaultValues: { postDescription: "", platform: "Instagram", tone: "Promotional" },
   });
 
   useEffect(() => {
@@ -92,6 +105,7 @@ export default function Captions() {
     }
   }, [calendarMutation.data]);
 
+  // Auto-generate from calendar context passed via localStorage
   useEffect(() => {
     if (!profileId || autoFired.current) return;
     const raw = localStorage.getItem("captionContext");
@@ -104,6 +118,12 @@ export default function Captions() {
       form.setValue("platform", ctx.platform || "Instagram");
       form.setValue("tone", ctx.tone || "Promotional");
       setActiveLabel(ctx.label);
+      setActiveCtx({
+        description: ctx.description,
+        platform: ctx.platform || "Instagram",
+        theme: ctx.label,
+        postType: ctx.postType || "Static",
+      });
       generateCaptions.mutate({
         data: {
           businessProfileId: profileId,
@@ -115,29 +135,62 @@ export default function Captions() {
     } catch { /* ignore */ }
   }, [profileId]);
 
-  const triggerGenerate = (desc: string, platform: string, tone: string, label: string) => {
+  // Reset image when new captions are being generated
+  useEffect(() => {
+    if (generateCaptions.isPending) {
+      generateImage.reset();
+    }
+  }, [generateCaptions.isPending]);
+
+  const triggerGenerate = (
+    desc: string, platform: string, tone: string, label: string, postType = "Static"
+  ) => {
     if (!profileId) return;
     form.setValue("postDescription", desc);
     form.setValue("platform", platform);
     form.setValue("tone", tone);
     setActiveLabel(label);
+    setActiveCtx({ description: desc, platform, theme: label, postType });
+    generateImage.reset();
     generateCaptions.mutate({
-      data: {
-        businessProfileId: profileId,
-        postDescription: desc,
-        platform,
-        tone,
-      },
+      data: { businessProfileId: profileId, postDescription: desc, platform, tone },
     });
   };
 
   function onSubmit(values: z.infer<typeof formSchema>) {
     if (!profileId) return;
     setActiveLabel("Custom");
-    generateCaptions.mutate({
-      data: { businessProfileId: profileId, ...values },
+    setActiveCtx({
+      description: values.postDescription,
+      platform: values.platform,
+      theme: values.postDescription.slice(0, 60),
+      postType: "Static",
     });
+    generateImage.reset();
+    generateCaptions.mutate({ data: { businessProfileId: profileId, ...values } });
   }
+
+  const handleGenerateImage = () => {
+    if (!profileId || !activeCtx || !generateCaptions.data) return;
+    const firstCaption = generateCaptions.data.captions[0];
+    generateImage.mutate({
+      data: {
+        businessProfileId: profileId,
+        captionText: firstCaption?.caption || activeCtx.description,
+        platform: activeCtx.platform,
+        theme: activeCtx.theme,
+        postType: activeCtx.postType,
+      },
+    });
+  };
+
+  const downloadImage = () => {
+    if (!generateImage.data?.imageUrl) return;
+    const a = document.createElement("a");
+    a.href = generateImage.data.imageUrl;
+    a.download = `growthos-post-${Date.now()}.png`;
+    a.click();
+  };
 
   const copyToClipboard = (id: number, text: string, hashtags: string[]) => {
     navigator.clipboard.writeText(`${text}\n\n${hashtags.join(" ")}`);
@@ -160,6 +213,8 @@ export default function Captions() {
 
   if (!profileId) return null;
 
+  const hasCaptions = !generateCaptions.isPending && !!generateCaptions.data;
+
   return (
     <div className="p-6 lg:p-8 max-w-6xl mx-auto space-y-8">
       <div>
@@ -167,11 +222,11 @@ export default function Captions() {
           <PenTool className="w-8 h-8 text-indigo-600" />
           AI Caption Generator
         </h1>
-        <p className="text-slate-500 mt-2">Captions auto-generated from your calendar and upcoming events.</p>
+        <p className="text-slate-500 mt-2">Professional captions + AI-generated post images, powered by your business strategy.</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-        {/* Left Panel: Smart Suggestions */}
+        {/* Left Panel */}
         <div className="lg:col-span-1 space-y-5">
 
           {/* From Calendar */}
@@ -184,24 +239,16 @@ export default function Captions() {
             </CardHeader>
             <CardContent className="p-3 space-y-2">
               {(calendarMutation.isPending && cachedDays.length === 0) ? (
-                <div className="py-4 flex justify-center">
-                  <Loader2 className="w-5 h-5 animate-spin text-slate-400" />
-                </div>
+                <div className="py-4 flex justify-center"><Loader2 className="w-5 h-5 animate-spin text-slate-400" /></div>
               ) : upcomingDays.length > 0 ? (
                 upcomingDays.map((day) => (
                   <button
                     key={day.dayNumber}
                     data-testid={`quick-gen-day-${day.dayNumber}`}
-                    onClick={() =>
-                      triggerGenerate(
-                        day.contentIdea
-                          ? `${day.theme}: ${day.contentIdea}`
-                          : `${day.theme}. ${day.caption.slice(0, 120)}`,
-                        "Instagram",
-                        dayTone(day),
-                        day.theme
-                      )
-                    }
+                    onClick={() => triggerGenerate(
+                      day.contentIdea ? `${day.theme}: ${day.contentIdea}` : `${day.theme}. ${day.caption.slice(0, 120)}`,
+                      "Instagram", dayTone(day), day.theme, day.postType
+                    )}
                     className={`w-full text-left p-3 rounded-lg border text-sm transition-all ${
                       activeLabel === day.theme
                         ? "border-indigo-400 bg-indigo-50"
@@ -211,15 +258,11 @@ export default function Captions() {
                   >
                     <div className="flex items-start justify-between gap-2 mb-1">
                       <span className="font-semibold text-slate-800 leading-tight">{day.theme}</span>
-                      <Badge variant="outline" className="shrink-0 text-xs px-1.5 py-0">
-                        {day.postType}
-                      </Badge>
+                      <Badge variant="outline" className="shrink-0 text-xs px-1.5 py-0">{day.postType}</Badge>
                     </div>
                     <div className="flex items-center gap-1.5 text-xs text-slate-500">
                       <span>{new Date(day.date).toLocaleDateString("en-IN", { weekday: "short", month: "short", day: "numeric" })}</span>
-                      {day.festival && (
-                        <span className="text-amber-600 font-medium">· {day.festival}</span>
-                      )}
+                      {day.festival && <span className="text-amber-600 font-medium">· {day.festival}</span>}
                     </div>
                     {activeLabel === day.theme && generateCaptions.isPending && (
                       <div className="mt-1.5 flex items-center gap-1 text-xs text-indigo-600 font-medium">
@@ -244,22 +287,16 @@ export default function Captions() {
             </CardHeader>
             <CardContent className="p-3 space-y-2">
               {festivalMutation.isPending ? (
-                <div className="py-4 flex justify-center">
-                  <Loader2 className="w-5 h-5 animate-spin text-slate-400" />
-                </div>
+                <div className="py-4 flex justify-center"><Loader2 className="w-5 h-5 animate-spin text-slate-400" /></div>
               ) : upcomingFestivals.length > 0 ? (
                 upcomingFestivals.map((festival, i) => (
                   <button
                     key={i}
                     data-testid={`quick-gen-festival-${i}`}
-                    onClick={() =>
-                      triggerGenerate(
-                        `${festival.name} special post: ${festival.campaignIdea}`,
-                        "Instagram",
-                        "Festive",
-                        festival.name
-                      )
-                    }
+                    onClick={() => triggerGenerate(
+                      `${festival.name} special post: ${festival.campaignIdea}`,
+                      "Instagram", "Festive", festival.name, "Static"
+                    )}
                     className={`w-full text-left p-3 rounded-lg border text-sm transition-all ${
                       activeLabel === festival.name
                         ? "border-amber-400 bg-amber-50"
@@ -269,15 +306,9 @@ export default function Captions() {
                   >
                     <div className="flex items-center justify-between gap-2 mb-1">
                       <span className="font-semibold text-slate-800">{festival.name}</span>
-                      <span
-                        className={`text-xs font-medium px-1.5 py-0.5 rounded ${
-                          festival.urgency === "Today"
-                            ? "bg-red-100 text-red-700"
-                            : "bg-orange-100 text-orange-700"
-                        }`}
-                      >
-                        {festival.urgency}
-                      </span>
+                      <span className={`text-xs font-medium px-1.5 py-0.5 rounded ${
+                        festival.urgency === "Today" ? "bg-red-100 text-red-700" : "bg-orange-100 text-orange-700"
+                      }`}>{festival.urgency}</span>
                     </div>
                     <p className="text-xs text-slate-500 line-clamp-2">{festival.campaignIdea}</p>
                     {activeLabel === festival.name && generateCaptions.isPending && (
@@ -293,7 +324,7 @@ export default function Captions() {
             </CardContent>
           </Card>
 
-          {/* Custom Form (collapsible) */}
+          {/* Custom Form */}
           <Card className="border-slate-200 shadow-sm">
             <button
               type="button"
@@ -306,7 +337,6 @@ export default function Captions() {
               </span>
               {showCustomForm ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
             </button>
-
             {showCustomForm && (
               <CardContent className="px-5 pb-5 pt-0 border-t">
                 <Form {...form}>
@@ -318,11 +348,7 @@ export default function Captions() {
                         <FormItem>
                           <FormLabel className="text-slate-700 text-xs">What is this post about?</FormLabel>
                           <FormControl>
-                            <Textarea
-                              placeholder="e.g. New summer collection, 20% off sale..."
-                              className="resize-none h-24 bg-slate-50 text-sm"
-                              {...field}
-                            />
+                            <Textarea placeholder="e.g. New summer collection, 20% off sale..." className="resize-none h-24 bg-slate-50 text-sm" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -335,11 +361,7 @@ export default function Captions() {
                         <FormItem>
                           <FormLabel className="text-slate-700 text-xs">Platform</FormLabel>
                           <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl>
-                              <SelectTrigger className="bg-slate-50 text-sm">
-                                <SelectValue />
-                              </SelectTrigger>
-                            </FormControl>
+                            <FormControl><SelectTrigger className="bg-slate-50 text-sm"><SelectValue /></SelectTrigger></FormControl>
                             <SelectContent>
                               <SelectItem value="Instagram">Instagram</SelectItem>
                               <SelectItem value="LinkedIn">LinkedIn</SelectItem>
@@ -357,11 +379,7 @@ export default function Captions() {
                         <FormItem>
                           <FormLabel className="text-slate-700 text-xs">Tone</FormLabel>
                           <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl>
-                              <SelectTrigger className="bg-slate-50 text-sm">
-                                <SelectValue />
-                              </SelectTrigger>
-                            </FormControl>
+                            <FormControl><SelectTrigger className="bg-slate-50 text-sm"><SelectValue /></SelectTrigger></FormControl>
                             <SelectContent>
                               <SelectItem value="Promotional">Promotional</SelectItem>
                               <SelectItem value="Educational">Educational</SelectItem>
@@ -373,16 +391,8 @@ export default function Captions() {
                         </FormItem>
                       )}
                     />
-                    <Button
-                      type="submit"
-                      className="w-full bg-indigo-600 text-white hover:bg-indigo-700 h-10 text-sm"
-                      disabled={generateCaptions.isPending}
-                    >
-                      {generateCaptions.isPending ? (
-                        <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Generating...</>
-                      ) : (
-                        "Generate Captions"
-                      )}
+                    <Button type="submit" className="w-full bg-indigo-600 text-white hover:bg-indigo-700 h-10 text-sm" disabled={generateCaptions.isPending}>
+                      {generateCaptions.isPending ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Generating...</> : "Generate Captions"}
                     </Button>
                   </form>
                 </Form>
@@ -393,8 +403,8 @@ export default function Captions() {
 
         {/* Right Panel: Results */}
         <div className="lg:col-span-2 space-y-5">
-          {activeLabel && !generateCaptions.isPending && !generateCaptions.data && null}
 
+          {/* Loading skeletons */}
           {generateCaptions.isPending && (
             <div className="space-y-5">
               {[1, 2, 3].map((i) => (
@@ -407,32 +417,118 @@ export default function Captions() {
                     <div className="h-4 bg-slate-100 rounded w-full" />
                     <div className="h-4 bg-slate-100 rounded w-full" />
                     <div className="h-4 bg-slate-100 rounded w-3/4" />
-                    <div className="h-4 bg-slate-100 rounded w-1/2" />
                   </CardContent>
                 </Card>
               ))}
             </div>
           )}
 
+          {/* Empty state */}
           {!generateCaptions.isPending && !generateCaptions.data && (
             <div className="h-[480px] flex flex-col items-center justify-center text-slate-500 border-2 border-dashed border-slate-200 rounded-xl bg-white">
               <PenTool className="w-12 h-12 mb-4 text-slate-300" />
               <p className="text-lg font-medium text-slate-700">Pick a post to generate captions</p>
               <p className="text-sm text-slate-400 mt-2 max-w-xs text-center">
-                Select a calendar day or upcoming festival on the left — captions will appear here instantly.
+                Select a calendar day or upcoming festival — expert-level captions will appear here instantly.
               </p>
             </div>
           )}
 
-          {!generateCaptions.isPending && generateCaptions.data && (
+          {/* Results */}
+          {hasCaptions && (
             <>
+              {/* Context badge */}
               {activeLabel && (
                 <div className="flex items-center gap-2 text-sm text-indigo-700 font-medium bg-indigo-50 border border-indigo-100 px-4 py-2.5 rounded-lg">
-                  <Sparkles className="w-4 h-4" />
-                  Captions generated for: <span className="font-bold">{activeLabel}</span>
+                  <Sparkles className="w-4 h-4 shrink-0" />
+                  <span>Captions for: <span className="font-bold">{activeLabel}</span></span>
                 </div>
               )}
-              {generateCaptions.data.captions.map((caption) => (
+
+              {/* AI Image Generator Card */}
+              <Card className="border-violet-200 bg-gradient-to-br from-violet-50 to-indigo-50 shadow-sm">
+                <CardHeader className="pb-3 px-6 pt-5 border-b border-violet-100">
+                  <CardTitle className="text-base flex items-center gap-2 text-violet-900">
+                    <ImageIcon className="w-5 h-5 text-violet-600" />
+                    AI Post Image
+                    <Badge variant="outline" className="ml-auto text-xs bg-violet-100 border-violet-200 text-violet-700">Gemini Vision</Badge>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-6">
+                  {generateImage.isPending && (
+                    <div className="flex flex-col items-center justify-center py-12 gap-3">
+                      <div className="relative">
+                        <div className="w-16 h-16 rounded-full border-4 border-violet-100 border-t-violet-500 animate-spin" />
+                        <ImageIcon className="w-6 h-6 text-violet-400 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+                      </div>
+                      <p className="text-sm text-violet-700 font-medium">Generating your post image...</p>
+                      <p className="text-xs text-violet-500">This takes 10–20 seconds</p>
+                    </div>
+                  )}
+
+                  {!generateImage.isPending && !generateImage.data && !generateImage.isError && (
+                    <div className="flex flex-col items-center justify-center py-8 gap-4">
+                      <div className="w-24 h-24 rounded-2xl bg-violet-100 flex items-center justify-center">
+                        <ImageIcon className="w-10 h-10 text-violet-400" />
+                      </div>
+                      <div className="text-center">
+                        <p className="text-sm font-medium text-slate-700">Generate a bespoke visual for this post</p>
+                        <p className="text-xs text-slate-400 mt-1">AI creates a professional marketing image matched to your caption and brand</p>
+                      </div>
+                      <Button
+                        onClick={handleGenerateImage}
+                        className="bg-violet-600 hover:bg-violet-700 text-white gap-2"
+                        data-testid="button-generate-image"
+                      >
+                        <ImageIcon className="w-4 h-4" />
+                        Generate Post Image
+                      </Button>
+                    </div>
+                  )}
+
+                  {generateImage.isError && (
+                    <div className="flex flex-col items-center justify-center py-8 gap-4">
+                      <p className="text-sm text-red-600 font-medium text-center">Image generation failed. Please try again.</p>
+                      <Button onClick={handleGenerateImage} variant="outline" size="sm" className="gap-2">
+                        <RefreshCw className="w-4 h-4" /> Retry
+                      </Button>
+                    </div>
+                  )}
+
+                  {generateImage.data?.imageUrl && (
+                    <div className="space-y-4">
+                      <div className="relative rounded-xl overflow-hidden border border-violet-100 shadow-md">
+                        <img
+                          src={generateImage.data.imageUrl}
+                          alt="AI-generated post visual"
+                          className="w-full object-cover"
+                          data-testid="generated-post-image"
+                        />
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={downloadImage}
+                          className="flex-1 bg-violet-600 hover:bg-violet-700 text-white gap-2"
+                          data-testid="button-download-image"
+                        >
+                          <Download className="w-4 h-4" /> Download Image
+                        </Button>
+                        <Button
+                          onClick={handleGenerateImage}
+                          variant="outline"
+                          className="gap-2 border-violet-200 text-violet-700 hover:bg-violet-50"
+                          disabled={generateImage.isPending}
+                        >
+                          <RefreshCw className="w-4 h-4" /> Regenerate
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Caption Cards */}
+              {generateCaptions.data!.captions.map((caption) => (
                 <Card key={caption.id} className="border-slate-200 shadow-sm hover:shadow-md transition-shadow">
                   <CardHeader className="pb-3 flex flex-row items-center justify-between bg-slate-50/50 border-b">
                     <Badge variant="outline" className="bg-white text-slate-700 border-slate-200 px-3 py-1 font-medium">
@@ -446,10 +542,7 @@ export default function Captions() {
                     <p className="text-slate-800 whitespace-pre-wrap leading-relaxed">{caption.caption}</p>
                     <div className="mt-5 flex flex-wrap gap-2">
                       {caption.hashtags.map((tag) => (
-                        <span
-                          key={tag}
-                          className="text-sm font-medium text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-md"
-                        >
+                        <span key={tag} className="text-sm font-medium text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-md">
                           {tag}
                         </span>
                       ))}

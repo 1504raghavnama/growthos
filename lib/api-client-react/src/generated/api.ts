@@ -29,6 +29,8 @@ import type {
   FestivalRequest,
   FestivalResult,
   HealthStatus,
+  ImageRequest,
+  ImageResult,
   PerformanceRequest,
   PerformanceResult,
 } from "./api.schemas";
@@ -633,6 +635,92 @@ export const useGetAdRecommendations = <
   TContext
 > => {
   return useMutation(getGetAdRecommendationsMutationOptions(options));
+};
+
+/**
+ * @summary Generate a social media post image using AI
+ */
+export const getGeneratePostImageUrl = () => {
+  return `/api/growthos/generate-post-image`;
+};
+
+export const generatePostImage = async (
+  imageRequest: ImageRequest,
+  options?: RequestInit,
+): Promise<ImageResult> => {
+  return customFetch<ImageResult>(getGeneratePostImageUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(imageRequest),
+  });
+};
+
+export const getGeneratePostImageMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof generatePostImage>>,
+    TError,
+    { data: BodyType<ImageRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof generatePostImage>>,
+  TError,
+  { data: BodyType<ImageRequest> },
+  TContext
+> => {
+  const mutationKey = ["generatePostImage"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof generatePostImage>>,
+    { data: BodyType<ImageRequest> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return generatePostImage(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type GeneratePostImageMutationResult = NonNullable<
+  Awaited<ReturnType<typeof generatePostImage>>
+>;
+export type GeneratePostImageMutationBody = BodyType<ImageRequest>;
+export type GeneratePostImageMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Generate a social media post image using AI
+ */
+export const useGeneratePostImage = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof generatePostImage>>,
+    TError,
+    { data: BodyType<ImageRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof generatePostImage>>,
+  TError,
+  { data: BodyType<ImageRequest> },
+  TContext
+> => {
+  return useMutation(getGeneratePostImageMutationOptions(options));
 };
 
 /**

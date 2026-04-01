@@ -147,6 +147,25 @@ paths:
               schema:
                 $ref: "#/components/schemas/AdResult"
 
+  /growthos/generate-post-image:
+    post:
+      operationId: generatePostImage
+      tags: [growthos]
+      summary: Generate a social media post image using AI
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ImageRequest"
+      responses:
+        "200":
+          description: Generated image as base64
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImageResult"
+
   /growthos/performance-metrics:
     post:
       operationId: getPerformanceMetrics
@@ -529,3 +548,33 @@ components:
         - platformEngagement
         - aiInsight
         - topPost
+
+    ImageRequest:
+      type: object
+      properties:
+        businessProfileId:
+          type: string
+        captionText:
+          type: string
+        platform:
+          type: string
+        theme:
+          type: string
+        postType:
+          type: string
+      required:
+        - businessProfileId
+        - captionText
+        - platform
+        - theme
+
+    ImageResult:
+      type: object
+      properties:
+        imageUrl:
+          type: string
+        mimeType:
+          type: string
+      required:
+        - imageUrl
+        - mimeType

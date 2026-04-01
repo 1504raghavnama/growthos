@@ -5,6 +5,7 @@ import generateCaptionsRouter from "./generate-captions";
 import festivalTrendsRouter from "./festival-trends";
 import adRecommendationsRouter from "./ad-recommendations";
 import performanceMetricsRouter from "./performance-metrics";
+import generatePostImageRouter from "./generate-post-image";
 
 const router: IRouter = Router();
 
@@ -14,5 +15,6 @@ router.use(generateCaptionsRouter);
 router.use(festivalTrendsRouter);
 router.use(adRecommendationsRouter);
 router.use(performanceMetricsRouter);
+router.use(generatePostImageRouter);
 
 export default router;

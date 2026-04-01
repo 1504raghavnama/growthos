@@ -22,6 +22,8 @@ export * from "./festivalCampaign";
 export * from "./festivalRequest";
 export * from "./festivalResult";
 export * from "./healthStatus";
+export * from "./imageRequest";
+export * from "./imageResult";
 export * from "./performanceRequest";
 export * from "./performanceResult";
 export * from "./performanceResultTopPost";

@@ -163,6 +163,22 @@ export const GetAdRecommendationsResponse = zod.object({
 });
 
 /**
+ * @summary Generate a social media post image using AI
+ */
+export const GeneratePostImageBody = zod.object({
+  businessProfileId: zod.string(),
+  captionText: zod.string(),
+  platform: zod.string(),
+  theme: zod.string(),
+  postType: zod.string().optional(),
+});
+
+export const GeneratePostImageResponse = zod.object({
+  imageUrl: zod.string(),
+  mimeType: zod.string(),
+});
+
+/**
  * @summary Get simulated performance metrics with AI insight
  */
 export const GetPerformanceMetricsBody = zod.object({

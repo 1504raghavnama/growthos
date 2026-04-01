@@ -147,3 +147,16 @@ export interface PerformanceResult {
   aiInsight: string;
   topPost: PerformanceResultTopPost;
 }
+
+export interface ImageRequest {
+  businessProfileId: string;
+  captionText: string;
+  platform: string;
+  theme: string;
+  postType?: string;
+}
+
+export interface ImageResult {
+  imageUrl: string;
+  mimeType: string;
+}
