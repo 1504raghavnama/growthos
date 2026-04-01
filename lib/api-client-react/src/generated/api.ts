@@ -5,18 +5,36 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import type {
+  MutationFunction,
   QueryFunction,
   QueryKey,
+  UseMutationOptions,
+  UseMutationResult,
   UseQueryOptions,
   UseQueryResult,
 } from "@tanstack/react-query";
 
-import type { HealthStatus } from "./api.schemas";
+import type {
+  AdRequest,
+  AdResult,
+  BusinessProfileInput,
+  BusinessProfileResult,
+  CalendarRequest,
+  CalendarResult,
+  CaptionRequest,
+  CaptionResult,
+  ErrorResponse,
+  FestivalRequest,
+  FestivalResult,
+  HealthStatus,
+  PerformanceRequest,
+  PerformanceResult,
+} from "./api.schemas";
 
 import { customFetch } from "../custom-fetch";
-import type { ErrorType } from "../custom-fetch";
+import type { ErrorType, BodyType } from "../custom-fetch";
 
 type AwaitedInput<T> = PromiseLike<T> | T;
 
@@ -99,3 +117,606 @@ export function useHealthCheck<
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
+
+/**
+ * @summary Analyze and save a business profile
+ */
+export const getAnalyzeBusinessProfileUrl = () => {
+  return `/api/growthos/business-profile`;
+};
+
+export const analyzeBusinessProfile = async (
+  businessProfileInput: BusinessProfileInput,
+  options?: RequestInit,
+): Promise<BusinessProfileResult> => {
+  return customFetch<BusinessProfileResult>(getAnalyzeBusinessProfileUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(businessProfileInput),
+  });
+};
+
+export const getAnalyzeBusinessProfileMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof analyzeBusinessProfile>>,
+    TError,
+    { data: BodyType<BusinessProfileInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof analyzeBusinessProfile>>,
+  TError,
+  { data: BodyType<BusinessProfileInput> },
+  TContext
+> => {
+  const mutationKey = ["analyzeBusinessProfile"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof analyzeBusinessProfile>>,
+    { data: BodyType<BusinessProfileInput> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return analyzeBusinessProfile(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AnalyzeBusinessProfileMutationResult = NonNullable<
+  Awaited<ReturnType<typeof analyzeBusinessProfile>>
+>;
+export type AnalyzeBusinessProfileMutationBody = BodyType<BusinessProfileInput>;
+export type AnalyzeBusinessProfileMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Analyze and save a business profile
+ */
+export const useAnalyzeBusinessProfile = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof analyzeBusinessProfile>>,
+    TError,
+    { data: BodyType<BusinessProfileInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof analyzeBusinessProfile>>,
+  TError,
+  { data: BodyType<BusinessProfileInput> },
+  TContext
+> => {
+  return useMutation(getAnalyzeBusinessProfileMutationOptions(options));
+};
+
+/**
+ * @summary Get a saved business profile
+ */
+export const getGetBusinessProfileUrl = (id: string) => {
+  return `/api/growthos/business-profile/${id}`;
+};
+
+export const getBusinessProfile = async (
+  id: string,
+  options?: RequestInit,
+): Promise<BusinessProfileResult> => {
+  return customFetch<BusinessProfileResult>(getGetBusinessProfileUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetBusinessProfileQueryKey = (id: string) => {
+  return [`/api/growthos/business-profile/${id}`] as const;
+};
+
+export const getGetBusinessProfileQueryOptions = <
+  TData = Awaited<ReturnType<typeof getBusinessProfile>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  id: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getBusinessProfile>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetBusinessProfileQueryKey(id);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getBusinessProfile>>
+  > = ({ signal }) => getBusinessProfile(id, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getBusinessProfile>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetBusinessProfileQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getBusinessProfile>>
+>;
+export type GetBusinessProfileQueryError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Get a saved business profile
+ */
+
+export function useGetBusinessProfile<
+  TData = Awaited<ReturnType<typeof getBusinessProfile>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  id: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getBusinessProfile>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetBusinessProfileQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Generate a 7-day content calendar
+ */
+export const getGenerateWeeklyCalendarUrl = () => {
+  return `/api/growthos/weekly-calendar`;
+};
+
+export const generateWeeklyCalendar = async (
+  calendarRequest: CalendarRequest,
+  options?: RequestInit,
+): Promise<CalendarResult> => {
+  return customFetch<CalendarResult>(getGenerateWeeklyCalendarUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(calendarRequest),
+  });
+};
+
+export const getGenerateWeeklyCalendarMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof generateWeeklyCalendar>>,
+    TError,
+    { data: BodyType<CalendarRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof generateWeeklyCalendar>>,
+  TError,
+  { data: BodyType<CalendarRequest> },
+  TContext
+> => {
+  const mutationKey = ["generateWeeklyCalendar"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof generateWeeklyCalendar>>,
+    { data: BodyType<CalendarRequest> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return generateWeeklyCalendar(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type GenerateWeeklyCalendarMutationResult = NonNullable<
+  Awaited<ReturnType<typeof generateWeeklyCalendar>>
+>;
+export type GenerateWeeklyCalendarMutationBody = BodyType<CalendarRequest>;
+export type GenerateWeeklyCalendarMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Generate a 7-day content calendar
+ */
+export const useGenerateWeeklyCalendar = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof generateWeeklyCalendar>>,
+    TError,
+    { data: BodyType<CalendarRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof generateWeeklyCalendar>>,
+  TError,
+  { data: BodyType<CalendarRequest> },
+  TContext
+> => {
+  return useMutation(getGenerateWeeklyCalendarMutationOptions(options));
+};
+
+/**
+ * @summary Generate AI captions for a post
+ */
+export const getGenerateCaptionsUrl = () => {
+  return `/api/growthos/generate-captions`;
+};
+
+export const generateCaptions = async (
+  captionRequest: CaptionRequest,
+  options?: RequestInit,
+): Promise<CaptionResult> => {
+  return customFetch<CaptionResult>(getGenerateCaptionsUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(captionRequest),
+  });
+};
+
+export const getGenerateCaptionsMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof generateCaptions>>,
+    TError,
+    { data: BodyType<CaptionRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof generateCaptions>>,
+  TError,
+  { data: BodyType<CaptionRequest> },
+  TContext
+> => {
+  const mutationKey = ["generateCaptions"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof generateCaptions>>,
+    { data: BodyType<CaptionRequest> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return generateCaptions(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type GenerateCaptionsMutationResult = NonNullable<
+  Awaited<ReturnType<typeof generateCaptions>>
+>;
+export type GenerateCaptionsMutationBody = BodyType<CaptionRequest>;
+export type GenerateCaptionsMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Generate AI captions for a post
+ */
+export const useGenerateCaptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof generateCaptions>>,
+    TError,
+    { data: BodyType<CaptionRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof generateCaptions>>,
+  TError,
+  { data: BodyType<CaptionRequest> },
+  TContext
+> => {
+  return useMutation(getGenerateCaptionsMutationOptions(options));
+};
+
+/**
+ * @summary Get festival trends and campaign ideas
+ */
+export const getGetFestivalTrendsUrl = () => {
+  return `/api/growthos/festival-trends`;
+};
+
+export const getFestivalTrends = async (
+  festivalRequest: FestivalRequest,
+  options?: RequestInit,
+): Promise<FestivalResult> => {
+  return customFetch<FestivalResult>(getGetFestivalTrendsUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(festivalRequest),
+  });
+};
+
+export const getGetFestivalTrendsMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof getFestivalTrends>>,
+    TError,
+    { data: BodyType<FestivalRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof getFestivalTrends>>,
+  TError,
+  { data: BodyType<FestivalRequest> },
+  TContext
+> => {
+  const mutationKey = ["getFestivalTrends"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof getFestivalTrends>>,
+    { data: BodyType<FestivalRequest> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return getFestivalTrends(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type GetFestivalTrendsMutationResult = NonNullable<
+  Awaited<ReturnType<typeof getFestivalTrends>>
+>;
+export type GetFestivalTrendsMutationBody = BodyType<FestivalRequest>;
+export type GetFestivalTrendsMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Get festival trends and campaign ideas
+ */
+export const useGetFestivalTrends = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof getFestivalTrends>>,
+    TError,
+    { data: BodyType<FestivalRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof getFestivalTrends>>,
+  TError,
+  { data: BodyType<FestivalRequest> },
+  TContext
+> => {
+  return useMutation(getGetFestivalTrendsMutationOptions(options));
+};
+
+/**
+ * @summary Get ad campaign recommendations
+ */
+export const getGetAdRecommendationsUrl = () => {
+  return `/api/growthos/ad-recommendations`;
+};
+
+export const getAdRecommendations = async (
+  adRequest: AdRequest,
+  options?: RequestInit,
+): Promise<AdResult> => {
+  return customFetch<AdResult>(getGetAdRecommendationsUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(adRequest),
+  });
+};
+
+export const getGetAdRecommendationsMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof getAdRecommendations>>,
+    TError,
+    { data: BodyType<AdRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof getAdRecommendations>>,
+  TError,
+  { data: BodyType<AdRequest> },
+  TContext
+> => {
+  const mutationKey = ["getAdRecommendations"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof getAdRecommendations>>,
+    { data: BodyType<AdRequest> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return getAdRecommendations(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type GetAdRecommendationsMutationResult = NonNullable<
+  Awaited<ReturnType<typeof getAdRecommendations>>
+>;
+export type GetAdRecommendationsMutationBody = BodyType<AdRequest>;
+export type GetAdRecommendationsMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Get ad campaign recommendations
+ */
+export const useGetAdRecommendations = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof getAdRecommendations>>,
+    TError,
+    { data: BodyType<AdRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof getAdRecommendations>>,
+  TError,
+  { data: BodyType<AdRequest> },
+  TContext
+> => {
+  return useMutation(getGetAdRecommendationsMutationOptions(options));
+};
+
+/**
+ * @summary Get simulated performance metrics with AI insight
+ */
+export const getGetPerformanceMetricsUrl = () => {
+  return `/api/growthos/performance-metrics`;
+};
+
+export const getPerformanceMetrics = async (
+  performanceRequest: PerformanceRequest,
+  options?: RequestInit,
+): Promise<PerformanceResult> => {
+  return customFetch<PerformanceResult>(getGetPerformanceMetricsUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(performanceRequest),
+  });
+};
+
+export const getGetPerformanceMetricsMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof getPerformanceMetrics>>,
+    TError,
+    { data: BodyType<PerformanceRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof getPerformanceMetrics>>,
+  TError,
+  { data: BodyType<PerformanceRequest> },
+  TContext
+> => {
+  const mutationKey = ["getPerformanceMetrics"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof getPerformanceMetrics>>,
+    { data: BodyType<PerformanceRequest> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return getPerformanceMetrics(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type GetPerformanceMetricsMutationResult = NonNullable<
+  Awaited<ReturnType<typeof getPerformanceMetrics>>
+>;
+export type GetPerformanceMetricsMutationBody = BodyType<PerformanceRequest>;
+export type GetPerformanceMetricsMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Get simulated performance metrics with AI insight
+ */
+export const useGetPerformanceMetrics = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof getPerformanceMetrics>>,
+    TError,
+    { data: BodyType<PerformanceRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof getPerformanceMetrics>>,
+  TError,
+  { data: BodyType<PerformanceRequest> },
+  TContext
+> => {
+  return useMutation(getGetPerformanceMetricsMutationOptions(options));
+};

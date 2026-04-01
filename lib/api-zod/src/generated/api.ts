@@ -14,3 +14,177 @@ import * as zod from "zod";
 export const HealthCheckResponse = zod.object({
   status: zod.string(),
 });
+
+/**
+ * @summary Analyze and save a business profile
+ */
+export const AnalyzeBusinessProfileBody = zod.object({
+  businessName: zod.string(),
+  websiteUrl: zod.string().optional(),
+  businessType: zod.string(),
+  targetAudience: zod.string(),
+  location: zod.string(),
+  productsOrServices: zod.string(),
+  monthlyBudget: zod.string(),
+  primaryGoal: zod.string(),
+});
+
+export const AnalyzeBusinessProfileResponse = zod.object({
+  id: zod.string(),
+  businessName: zod.string(),
+  summary: zod.string(),
+  targetPersona: zod.string(),
+  usp: zod.string(),
+  contentPillars: zod.array(zod.string()),
+  brandTone: zod.string(),
+  competitorInsight: zod.string(),
+  topHashtags: zod.array(zod.string()),
+  bestPostingTimes: zod.array(zod.string()),
+  recommendedPlatforms: zod.array(zod.string()),
+  monthlyBudget: zod.string().optional(),
+  primaryGoal: zod.string().optional(),
+  businessType: zod.string().optional(),
+  location: zod.string().optional(),
+});
+
+/**
+ * @summary Get a saved business profile
+ */
+export const GetBusinessProfileParams = zod.object({
+  id: zod.coerce.string(),
+});
+
+export const GetBusinessProfileResponse = zod.object({
+  id: zod.string(),
+  businessName: zod.string(),
+  summary: zod.string(),
+  targetPersona: zod.string(),
+  usp: zod.string(),
+  contentPillars: zod.array(zod.string()),
+  brandTone: zod.string(),
+  competitorInsight: zod.string(),
+  topHashtags: zod.array(zod.string()),
+  bestPostingTimes: zod.array(zod.string()),
+  recommendedPlatforms: zod.array(zod.string()),
+  monthlyBudget: zod.string().optional(),
+  primaryGoal: zod.string().optional(),
+  businessType: zod.string().optional(),
+  location: zod.string().optional(),
+});
+
+/**
+ * @summary Generate a 7-day content calendar
+ */
+export const GenerateWeeklyCalendarBody = zod.object({
+  businessProfileId: zod.string(),
+});
+
+export const GenerateWeeklyCalendarResponse = zod.object({
+  week: zod.string(),
+  days: zod.array(
+    zod.object({
+      date: zod.string(),
+      dayNumber: zod.number(),
+      theme: zod.string(),
+      postType: zod.string(),
+      caption: zod.string(),
+      postingTime: zod.string(),
+      festival: zod.string().optional(),
+      contentIdea: zod.string(),
+    }),
+  ),
+});
+
+/**
+ * @summary Generate AI captions for a post
+ */
+export const GenerateCaptionsBody = zod.object({
+  businessProfileId: zod.string(),
+  postDescription: zod.string(),
+  platform: zod.string(),
+  tone: zod.string(),
+});
+
+export const GenerateCaptionsResponse = zod.object({
+  captions: zod.array(
+    zod.object({
+      id: zod.number(),
+      style: zod.string(),
+      caption: zod.string(),
+      hashtags: zod.array(zod.string()),
+      cta: zod.string(),
+      charCount: zod.number(),
+    }),
+  ),
+});
+
+/**
+ * @summary Get festival trends and campaign ideas
+ */
+export const GetFestivalTrendsBody = zod.object({
+  businessProfileId: zod.string(),
+});
+
+export const GetFestivalTrendsResponse = zod.object({
+  festivals: zod.array(
+    zod.object({
+      name: zod.string(),
+      date: zod.string(),
+      type: zod.string(),
+      urgency: zod.string(),
+      campaignIdea: zod.string(),
+      suggestedHashtags: zod.array(zod.string()),
+      caption: zod.string(),
+    }),
+  ),
+});
+
+/**
+ * @summary Get ad campaign recommendations
+ */
+export const GetAdRecommendationsBody = zod.object({
+  businessProfileId: zod.string(),
+});
+
+export const GetAdRecommendationsResponse = zod.object({
+  campaigns: zod.array(
+    zod.object({
+      name: zod.string(),
+      platform: zod.string(),
+      audienceTargeting: zod.string(),
+      budgetSplit: zod.string(),
+      expectedReach: zod.string(),
+      adFormat: zod.string(),
+      insight: zod.string(),
+      whyItWorks: zod.string(),
+    }),
+  ),
+  totalBudget: zod.string(),
+});
+
+/**
+ * @summary Get simulated performance metrics with AI insight
+ */
+export const GetPerformanceMetricsBody = zod.object({
+  businessProfileId: zod.string(),
+});
+
+export const GetPerformanceMetricsResponse = zod.object({
+  ctr: zod.number(),
+  cpc: zod.number(),
+  roas: zod.number(),
+  conversionRate: zod.number(),
+  weeklyReach: zod.array(zod.number()),
+  platformEngagement: zod.object({
+    instagram: zod.number(),
+    facebook: zod.number(),
+    linkedin: zod.number(),
+  }),
+  aiInsight: zod.string(),
+  topPost: zod.object({
+    caption: zod.string(),
+    platform: zod.string(),
+    reach: zod.number(),
+    engagement: zod.number(),
+  }),
+});

@@ -6,4 +6,23 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from "./adCampaign";
+export * from "./adRequest";
+export * from "./adResult";
+export * from "./businessProfileInput";
+export * from "./businessProfileResult";
+export * from "./calendarDay";
+export * from "./calendarRequest";
+export * from "./calendarResult";
+export * from "./captionItem";
+export * from "./captionRequest";
+export * from "./captionResult";
+export * from "./errorResponse";
+export * from "./festivalCampaign";
+export * from "./festivalRequest";
+export * from "./festivalResult";
 export * from "./healthStatus";
+export * from "./performanceRequest";
+export * from "./performanceResult";
+export * from "./performanceResultTopPost";
+export * from "./platformEngagement";

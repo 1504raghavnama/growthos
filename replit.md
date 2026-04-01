@@ -2,7 +2,7 @@
 
 ## Overview
 
-pnpm workspace monorepo using TypeScript. Each package manages its own dependencies.
+pnpm workspace monorepo using TypeScript. This is **GrowthOS** — an autonomous digital marketing platform for Indian SMBs.
 
 ## Stack
 
@@ -15,24 +15,38 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 - **Validation**: Zod (`zod/v4`), `drizzle-zod`
 - **API codegen**: Orval (from OpenAPI spec)
 - **Build**: esbuild (CJS bundle)
+- **AI**: Gemini via Replit AI Integrations (`lib/integrations-gemini-ai`, model: `gemini-2.0-flash`)
+- **Frontend**: React + Vite + Tailwind CSS + shadcn/ui + Recharts + wouter
+
+## Product: GrowthOS
+
+GrowthOS is a full-stack autonomous digital marketing platform for Indian SMBs. Key features:
+- Business onboarding with 3 demo businesses (Priya's Boutique, TechEdge Academy, Spice Garden Restaurant)
+- AI-powered content calendar generation (7-day weekly plan)
+- AI caption generator with 3 style variants
+- Indian festival trend detector with campaign ideas
+- Ad campaign recommendation engine (Meta/Google Ads)
+- Performance dashboard with simulated analytics + Recharts charts
+- Gemini AI integration with automatic fallback to hardcoded mock data
 
 ## Structure
 
 ```text
 artifacts-monorepo/
-├── artifacts/              # Deployable applications
-│   └── api-server/         # Express API server
-├── lib/                    # Shared libraries
+├── artifacts/
+│   ├── api-server/         # Express API server (GrowthOS routes + health)
+│   └── growthos/           # React+Vite frontend
+├── lib/
 │   ├── api-spec/           # OpenAPI spec + Orval codegen config
 │   ├── api-client-react/   # Generated React Query hooks
 │   ├── api-zod/            # Generated Zod schemas from OpenAPI
-│   └── db/                 # Drizzle ORM schema + DB connection
-├── scripts/                # Utility scripts (single workspace package)
-│   └── src/                # Individual .ts scripts, run via `pnpm --filter @workspace/scripts run <script>`
-├── pnpm-workspace.yaml     # pnpm workspace (artifacts/*, lib/*, lib/integrations/*, scripts)
-├── tsconfig.base.json      # Shared TS options (composite, bundler resolution, es2022)
-├── tsconfig.json           # Root TS project references
-└── package.json            # Root package with hoisted devDeps
+│   ├── db/                 # Drizzle ORM schema + DB connection
+│   └── integrations-gemini-ai/  # Gemini AI integration (via Replit AI Integrations)
+├── scripts/                # Utility scripts
+├── pnpm-workspace.yaml
+├── tsconfig.base.json
+├── tsconfig.json
+└── package.json
 ```
 
 ## TypeScript & Composite Projects
@@ -52,45 +66,70 @@ Every package extends `tsconfig.base.json` which sets `composite: true`. The roo
 
 ### `artifacts/api-server` (`@workspace/api-server`)
 
-Express 5 API server. Routes live in `src/routes/` and use `@workspace/api-zod` for request and response validation and `@workspace/db` for persistence.
+Express 5 API server. Routes live in `src/routes/` and use `@workspace/api-zod` for validation and `@workspace/db` for persistence.
 
 - Entry: `src/index.ts` — reads `PORT`, starts Express
 - App setup: `src/app.ts` — mounts CORS, JSON/urlencoded parsing, routes at `/api`
-- Routes: `src/routes/index.ts` mounts sub-routers; `src/routes/health.ts` exposes `GET /health` (full path: `/api/health`)
-- Depends on: `@workspace/db`, `@workspace/api-zod`
-- `pnpm --filter @workspace/api-server run dev` — run the dev server
-- `pnpm --filter @workspace/api-server run build` — production esbuild bundle (`dist/index.cjs`)
-- Build bundles an allowlist of deps (express, cors, pg, drizzle-orm, zod, etc.) and externalizes the rest
+- Routes: `src/routes/index.ts` mounts sub-routers; health at `/api/healthz`
+- GrowthOS routes: `src/routes/growthos/index.ts` — all 6 endpoints at `/api/growthos/`
+- Gemini integration: `src/lib/gemini.ts` — `callGemini()` wrapper with auto-fallback
+- Fallback data: `src/lib/fallbackData.ts` — comprehensive mock responses
+- Festival data: `src/lib/festivals.ts` — Indian festival calendar
+- Depends on: `@workspace/db`, `@workspace/api-zod`, `@workspace/integrations-gemini-ai`
+- **Important**: `@google/*` must NOT be in the esbuild externals list (it should be bundled)
+
+### `artifacts/growthos` (`@workspace/growthos`)
+
+React+Vite frontend. Single-page app with wouter routing.
+
+- Entry: `src/main.tsx`, App: `src/App.tsx`
+- Sidebar: `src/components/Sidebar.tsx` — dark navy sidebar with nav links
+- Pages:
+  - `/` → `src/pages/onboarding.tsx` — business form + 3 demo quick-fills
+  - `/dashboard` → `src/pages/dashboard.tsx` — profile summary + quick actions
+  - `/calendar` → `src/pages/calendar.tsx` — 7-day content calendar grid
+  - `/captions` → `src/pages/captions.tsx` — AI caption generator
+  - `/festivals` → `src/pages/festivals.tsx` — Indian festival trend detector
+  - `/ads` → `src/pages/ads.tsx` — ad campaign recommendations
+  - `/performance` → `src/pages/performance.tsx` — Recharts analytics dashboard
+- localStorage key: `"businessProfileId"` — stores the active business profile ID
 
 ### `lib/db` (`@workspace/db`)
 
-Database layer using Drizzle ORM with PostgreSQL. Exports a Drizzle client instance and schema models.
+Database layer using Drizzle ORM with PostgreSQL.
 
-- `src/index.ts` — creates a `Pool` + Drizzle instance, exports schema
-- `src/schema/index.ts` — barrel re-export of all models
-- `src/schema/<modelname>.ts` — table definitions with `drizzle-zod` insert schemas (no models definitions exist right now)
-- `drizzle.config.ts` — Drizzle Kit config (requires `DATABASE_URL`, automatically provided by Replit)
-- Exports: `.` (pool, db, schema), `./schema` (schema only)
-
-Production migrations are handled by Replit when publishing. In development, we just use `pnpm --filter @workspace/db run push`, and we fallback to `pnpm --filter @workspace/db run push-force`.
+- `src/schema/business-profiles.ts` — `business_profiles` table
+- `drizzle.config.ts` — Drizzle Kit config (requires `DATABASE_URL`)
 
 ### `lib/api-spec` (`@workspace/api-spec`)
 
-Owns the OpenAPI 3.1 spec (`openapi.yaml`) and the Orval config (`orval.config.ts`). Running codegen produces output into two sibling packages:
+OpenAPI 3.1 spec with 6 GrowthOS endpoints + health. Run codegen: `pnpm --filter @workspace/api-spec run codegen`
 
-1. `lib/api-client-react/src/generated/` — React Query hooks + fetch client
-2. `lib/api-zod/src/generated/` — Zod schemas
-
-Run codegen: `pnpm --filter @workspace/api-spec run codegen`
-
-### `lib/api-zod` (`@workspace/api-zod`)
-
-Generated Zod schemas from the OpenAPI spec (e.g. `HealthCheckResponse`). Used by `api-server` for response validation.
+GrowthOS endpoints:
+- `POST /growthos/analyze-business-profile`
+- `GET /growthos/business-profile/{id}`
+- `POST /growthos/generate-weekly-calendar`
+- `POST /growthos/generate-captions`
+- `POST /growthos/festival-trends`
+- `POST /growthos/ad-recommendations`
+- `POST /growthos/performance-metrics`
 
 ### `lib/api-client-react` (`@workspace/api-client-react`)
 
-Generated React Query hooks and fetch client from the OpenAPI spec (e.g. `useHealthCheck`, `healthCheck`).
+Generated React Query hooks. Key hooks: `useAnalyzeBusinessProfile`, `useGetBusinessProfile`, `useGenerateWeeklyCalendar`, `useGenerateCaptions`, `useGetFestivalTrends`, `useGetAdRecommendations`, `useGetPerformanceMetrics`.
+
+### `lib/integrations-gemini-ai` (`@workspace/integrations-gemini-ai`)
+
+Gemini AI client via Replit AI Integrations. Uses `AI_INTEGRATIONS_GEMINI_BASE_URL` and `AI_INTEGRATIONS_GEMINI_API_KEY` env vars. Model: `gemini-2.0-flash`.
 
 ### `scripts` (`@workspace/scripts`)
 
-Utility scripts package. Each script is a `.ts` file in `src/` with a corresponding npm script in `package.json`. Run scripts via `pnpm --filter @workspace/scripts run <script>`. Scripts can import any workspace package (e.g., `@workspace/db`) by adding it as a dependency in `scripts/package.json`.
+Utility scripts. Run via `pnpm --filter @workspace/scripts run <script>`.
+
+## Indian Market Features
+
+- All currency displayed in ₹ (Indian Rupee)
+- Indian festival calendar: Diwali, Holi, Durga Puja, Eid, Christmas, Republic Day, etc.
+- Demo businesses tailored for Indian market segments
+- Hashtag suggestions in Hindi + English mix
+- IST timezone references in content calendar

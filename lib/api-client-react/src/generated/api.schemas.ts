@@ -8,3 +8,142 @@
 export interface HealthStatus {
   status: string;
 }
+
+export interface ErrorResponse {
+  error: string;
+}
+
+export interface BusinessProfileInput {
+  businessName: string;
+  websiteUrl?: string;
+  businessType: string;
+  targetAudience: string;
+  location: string;
+  productsOrServices: string;
+  monthlyBudget: string;
+  primaryGoal: string;
+}
+
+export interface BusinessProfileResult {
+  id: string;
+  businessName: string;
+  summary: string;
+  targetPersona: string;
+  usp: string;
+  contentPillars: string[];
+  brandTone: string;
+  competitorInsight: string;
+  topHashtags: string[];
+  bestPostingTimes: string[];
+  recommendedPlatforms: string[];
+  monthlyBudget?: string;
+  primaryGoal?: string;
+  businessType?: string;
+  location?: string;
+}
+
+export interface CalendarRequest {
+  businessProfileId: string;
+}
+
+export interface CalendarDay {
+  date: string;
+  dayNumber: number;
+  theme: string;
+  postType: string;
+  caption: string;
+  postingTime: string;
+  festival?: string;
+  contentIdea: string;
+}
+
+export interface CalendarResult {
+  week: string;
+  days: CalendarDay[];
+}
+
+export interface CaptionRequest {
+  businessProfileId: string;
+  postDescription: string;
+  platform: string;
+  tone: string;
+}
+
+export interface CaptionItem {
+  id: number;
+  style: string;
+  caption: string;
+  hashtags: string[];
+  cta: string;
+  charCount: number;
+}
+
+export interface CaptionResult {
+  captions: CaptionItem[];
+}
+
+export interface FestivalRequest {
+  businessProfileId: string;
+}
+
+export interface FestivalCampaign {
+  name: string;
+  date: string;
+  type: string;
+  urgency: string;
+  campaignIdea: string;
+  suggestedHashtags: string[];
+  caption: string;
+}
+
+export interface FestivalResult {
+  festivals: FestivalCampaign[];
+}
+
+export interface AdRequest {
+  businessProfileId: string;
+}
+
+export interface AdCampaign {
+  name: string;
+  platform: string;
+  audienceTargeting: string;
+  budgetSplit: string;
+  expectedReach: string;
+  adFormat: string;
+  insight: string;
+  whyItWorks: string;
+}
+
+export interface AdResult {
+  campaigns: AdCampaign[];
+  totalBudget: string;
+}
+
+export interface PerformanceRequest {
+  businessProfileId: string;
+}
+
+export interface PlatformEngagement {
+  instagram: number;
+  facebook: number;
+  linkedin: number;
+}
+
+export type PerformanceResultTopPost = {
+  caption: string;
+  platform: string;
+  reach: number;
+  engagement: number;
+};
+
+export interface PerformanceResult {
+  ctr: number;
+  cpc: number;
+  roas: number;
+  conversionRate: number;
+  weeklyReach: number[];
+  platformEngagement: PlatformEngagement;
+  aiInsight: string;
+  topPost: PerformanceResultTopPost;
+}

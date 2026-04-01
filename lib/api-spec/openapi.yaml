@@ -10,6 +10,8 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: growthos
+    description: GrowthOS marketing platform operations
 paths:
   /healthz:
     get:
@@ -24,6 +26,146 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /growthos/business-profile:
+    post:
+      operationId: analyzeBusinessProfile
+      tags: [growthos]
+      summary: Analyze and save a business profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BusinessProfileInput"
+      responses:
+        "200":
+          description: Business profile analysis
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BusinessProfileResult"
+
+  /growthos/business-profile/{id}:
+    get:
+      operationId: getBusinessProfile
+      tags: [growthos]
+      summary: Get a saved business profile
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Business profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BusinessProfileResult"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /growthos/weekly-calendar:
+    post:
+      operationId: generateWeeklyCalendar
+      tags: [growthos]
+      summary: Generate a 7-day content calendar
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CalendarRequest"
+      responses:
+        "200":
+          description: Weekly content calendar
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CalendarResult"
+
+  /growthos/generate-captions:
+    post:
+      operationId: generateCaptions
+      tags: [growthos]
+      summary: Generate AI captions for a post
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CaptionRequest"
+      responses:
+        "200":
+          description: Generated captions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CaptionResult"
+
+  /growthos/festival-trends:
+    post:
+      operationId: getFestivalTrends
+      tags: [growthos]
+      summary: Get festival trends and campaign ideas
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FestivalRequest"
+      responses:
+        "200":
+          description: Festival trend campaigns
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FestivalResult"
+
+  /growthos/ad-recommendations:
+    post:
+      operationId: getAdRecommendations
+      tags: [growthos]
+      summary: Get ad campaign recommendations
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdRequest"
+      responses:
+        "200":
+          description: Ad campaign recommendations
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdResult"
+
+  /growthos/performance-metrics:
+    post:
+      operationId: getPerformanceMetrics
+      tags: [growthos]
+      summary: Get simulated performance metrics with AI insight
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PerformanceRequest"
+      responses:
+        "200":
+          description: Performance metrics and AI insight
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PerformanceResult"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +176,356 @@ components:
       required:
         - status
 
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+
+    BusinessProfileInput:
+      type: object
+      properties:
+        businessName:
+          type: string
+        websiteUrl:
+          type: string
+        businessType:
+          type: string
+        targetAudience:
+          type: string
+        location:
+          type: string
+        productsOrServices:
+          type: string
+        monthlyBudget:
+          type: string
+        primaryGoal:
+          type: string
+      required:
+        - businessName
+        - businessType
+        - targetAudience
+        - location
+        - productsOrServices
+        - monthlyBudget
+        - primaryGoal
+
+    BusinessProfileResult:
+      type: object
+      properties:
+        id:
+          type: string
+        businessName:
+          type: string
+        summary:
+          type: string
+        targetPersona:
+          type: string
+        usp:
+          type: string
+        contentPillars:
+          type: array
+          items:
+            type: string
+        brandTone:
+          type: string
+        competitorInsight:
+          type: string
+        topHashtags:
+          type: array
+          items:
+            type: string
+        bestPostingTimes:
+          type: array
+          items:
+            type: string
+        recommendedPlatforms:
+          type: array
+          items:
+            type: string
+        monthlyBudget:
+          type: string
+        primaryGoal:
+          type: string
+        businessType:
+          type: string
+        location:
+          type: string
+      required:
+        - id
+        - businessName
+        - summary
+        - targetPersona
+        - usp
+        - contentPillars
+        - brandTone
+        - competitorInsight
+        - topHashtags
+        - bestPostingTimes
+        - recommendedPlatforms
+
+    CalendarRequest:
+      type: object
+      properties:
+        businessProfileId:
+          type: string
+      required:
+        - businessProfileId
+
+    CalendarDay:
+      type: object
+      properties:
+        date:
+          type: string
+        dayNumber:
+          type: integer
+        theme:
+          type: string
+        postType:
+          type: string
+        caption:
+          type: string
+        postingTime:
+          type: string
+        festival:
+          type: string
+        contentIdea:
+          type: string
+      required:
+        - date
+        - dayNumber
+        - theme
+        - postType
+        - caption
+        - postingTime
+        - contentIdea
+
+    CalendarResult:
+      type: object
+      properties:
+        week:
+          type: string
+        days:
+          type: array
+          items:
+            $ref: "#/components/schemas/CalendarDay"
+      required:
+        - week
+        - days
+
+    CaptionRequest:
+      type: object
+      properties:
+        businessProfileId:
+          type: string
+        postDescription:
+          type: string
+        platform:
+          type: string
+        tone:
+          type: string
+      required:
+        - businessProfileId
+        - postDescription
+        - platform
+        - tone
+
+    CaptionItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        style:
+          type: string
+        caption:
+          type: string
+        hashtags:
+          type: array
+          items:
+            type: string
+        cta:
+          type: string
+        charCount:
+          type: integer
+      required:
+        - id
+        - style
+        - caption
+        - hashtags
+        - cta
+        - charCount
+
+    CaptionResult:
+      type: object
+      properties:
+        captions:
+          type: array
+          items:
+            $ref: "#/components/schemas/CaptionItem"
+      required:
+        - captions
+
+    FestivalRequest:
+      type: object
+      properties:
+        businessProfileId:
+          type: string
+      required:
+        - businessProfileId
+
+    FestivalCampaign:
+      type: object
+      properties:
+        name:
+          type: string
+        date:
+          type: string
+        type:
+          type: string
+        urgency:
+          type: string
+        campaignIdea:
+          type: string
+        suggestedHashtags:
+          type: array
+          items:
+            type: string
+        caption:
+          type: string
+      required:
+        - name
+        - date
+        - type
+        - urgency
+        - campaignIdea
+        - suggestedHashtags
+        - caption
+
+    FestivalResult:
+      type: object
+      properties:
+        festivals:
+          type: array
+          items:
+            $ref: "#/components/schemas/FestivalCampaign"
+      required:
+        - festivals
+
+    AdRequest:
+      type: object
+      properties:
+        businessProfileId:
+          type: string
+      required:
+        - businessProfileId
+
+    AdCampaign:
+      type: object
+      properties:
+        name:
+          type: string
+        platform:
+          type: string
+        audienceTargeting:
+          type: string
+        budgetSplit:
+          type: string
+        expectedReach:
+          type: string
+        adFormat:
+          type: string
+        insight:
+          type: string
+        whyItWorks:
+          type: string
+      required:
+        - name
+        - platform
+        - audienceTargeting
+        - budgetSplit
+        - expectedReach
+        - adFormat
+        - insight
+        - whyItWorks
+
+    AdResult:
+      type: object
+      properties:
+        campaigns:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdCampaign"
+        totalBudget:
+          type: string
+      required:
+        - campaigns
+        - totalBudget
+
+    PerformanceRequest:
+      type: object
+      properties:
+        businessProfileId:
+          type: string
+      required:
+        - businessProfileId
+
+    PlatformEngagement:
+      type: object
+      properties:
+        instagram:
+          type: number
+        facebook:
+          type: number
+        linkedin:
+          type: number
+      required:
+        - instagram
+        - facebook
+        - linkedin
+
+    PerformanceResult:
+      type: object
+      properties:
+        ctr:
+          type: number
+        cpc:
+          type: number
+        roas:
+          type: number
+        conversionRate:
+          type: number
+        weeklyReach:
+          type: array
+          items:
+            type: number
+        platformEngagement:
+          $ref: "#/components/schemas/PlatformEngagement"
+        aiInsight:
+          type: string
+        topPost:
+          type: object
+          properties:
+            caption:
+              type: string
+            platform:
+              type: string
+            reach:
+              type: number
+            engagement:
+              type: number
+          required:
+            - caption
+            - platform
+            - reach
+            - engagement
+      required:
+        - ctr
+        - cpc
+        - roas
+        - conversionRate
+        - weeklyReach
+        - platformEngagement
+        - aiInsight
+        - topPost
