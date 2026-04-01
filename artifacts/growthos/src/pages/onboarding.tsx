@@ -308,7 +308,9 @@ export default function Onboarding() {
                 {analyzeProfile.isPending ? (
                   <>
                     <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                    Analyzing your business...
+                    {form.getValues("websiteUrl")
+                      ? "Reading your website..."
+                      : "Analyzing your business..."}
                   </>
                 ) : (
                   <>

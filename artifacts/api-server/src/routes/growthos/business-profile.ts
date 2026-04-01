@@ -8,6 +8,7 @@ import {
 } from "@workspace/api-zod";
 import { callGemini } from "../../lib/gemini";
 import { FALLBACK_BUSINESS_PROFILE } from "../../lib/fallbackData";
+import { scrapeWebsite } from "../../lib/scraper";
 
 const router: IRouter = Router();
 
@@ -19,8 +20,18 @@ router.post("/business-profile", async (req, res) => {
   }
   const formData = parsed.data;
 
+  // Scrape website content if URL provided
+  let websiteContent: string | null = null;
+  if (formData.websiteUrl) {
+    websiteContent = await scrapeWebsite(formData.websiteUrl);
+  }
+
+  const websiteSection = websiteContent
+    ? `\n\nWebsite content scraped from ${formData.websiteUrl}:\n"""\n${websiteContent}\n"""\n\nUse this real website content to enrich your analysis.`
+    : "";
+
   const prompt = `You are a digital marketing expert specializing in Indian SMBs. Analyze this Indian business and return ONLY a valid JSON object (no markdown, no code blocks):
-Business: ${JSON.stringify(formData)}
+Business details: ${JSON.stringify({ ...formData, websiteUrl: undefined })}${websiteSection}
 
 Return this exact JSON structure:
 {
