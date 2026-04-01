@@ -71,13 +71,10 @@ Platform Split: Instagram ${ig}%, Facebook ${fb}%, LinkedIn ${li}%
 
 Return ONLY a plain text insight (no JSON, no markdown). Write in a helpful, data-driven tone. Include specific numbers. End with 1 actionable recommendation.`;
 
-  let aiInsight = FALLBACK_PERFORMANCE.aiInsight;
-  try {
-    const result = await callGemini(prompt, aiInsight, { plainText: true });
-    if (typeof result === "string" && result.length > 10) aiInsight = result;
-  } catch {
-    aiInsight = FALLBACK_PERFORMANCE.aiInsight;
-  }
+  const aiResult = await callGemini(prompt, FALLBACK_PERFORMANCE.aiInsight, { plainText: true });
+  const aiInsight = typeof aiResult === "string" && aiResult.length > 10
+    ? aiResult
+    : FALLBACK_PERFORMANCE.aiInsight;
 
   res.json({
     ...mockMetrics,
