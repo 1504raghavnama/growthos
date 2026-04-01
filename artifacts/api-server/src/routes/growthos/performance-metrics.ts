@@ -73,9 +73,8 @@ Return ONLY a plain text insight (no JSON, no markdown). Write in a helpful, dat
 
   let aiInsight = FALLBACK_PERFORMANCE.aiInsight;
   try {
-    const result = await callGemini(prompt, { text: aiInsight }) as { text?: string };
-    if (typeof result === "string") aiInsight = result;
-    else if (result?.text) aiInsight = result.text;
+    const result = await callGemini(prompt, aiInsight, { plainText: true });
+    if (typeof result === "string" && result.length > 10) aiInsight = result;
   } catch {
     aiInsight = FALLBACK_PERFORMANCE.aiInsight;
   }
