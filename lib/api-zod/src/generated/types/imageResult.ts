@@ -5,8 +5,9 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { UnsplashPhoto } from "./unsplashPhoto";
 
 export interface ImageResult {
-  imageUrl: string;
-  mimeType: string;
+  photos: UnsplashPhoto[];
+  searchQuery: string;
 }

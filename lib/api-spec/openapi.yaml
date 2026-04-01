@@ -568,13 +568,38 @@ components:
         - platform
         - theme
 
+    UnsplashPhoto:
+      type: object
+      properties:
+        url:
+          type: string
+        thumbUrl:
+          type: string
+        photographer:
+          type: string
+        photographerProfile:
+          type: string
+        unsplashLink:
+          type: string
+        downloadLocation:
+          type: string
+      required:
+        - url
+        - thumbUrl
+        - photographer
+        - photographerProfile
+        - unsplashLink
+        - downloadLocation
+
     ImageResult:
       type: object
       properties:
-        imageUrl:
-          type: string
-        mimeType:
+        photos:
+          type: array
+          items:
+            $ref: "#/components/schemas/UnsplashPhoto"
+        searchQuery:
           type: string
       required:
-        - imageUrl
-        - mimeType
+        - photos
+        - searchQuery

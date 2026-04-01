@@ -156,7 +156,16 @@ export interface ImageRequest {
   postType?: string;
 }
 
+export interface UnsplashPhoto {
+  url: string;
+  thumbUrl: string;
+  photographer: string;
+  photographerProfile: string;
+  unsplashLink: string;
+  downloadLocation: string;
+}
+
 export interface ImageResult {
-  imageUrl: string;
-  mimeType: string;
+  photos: UnsplashPhoto[];
+  searchQuery: string;
 }

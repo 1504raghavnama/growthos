@@ -174,8 +174,17 @@ export const GeneratePostImageBody = zod.object({
 });
 
 export const GeneratePostImageResponse = zod.object({
-  imageUrl: zod.string(),
-  mimeType: zod.string(),
+  photos: zod.array(
+    zod.object({
+      url: zod.string(),
+      thumbUrl: zod.string(),
+      photographer: zod.string(),
+      photographerProfile: zod.string(),
+      unsplashLink: zod.string(),
+      downloadLocation: zod.string(),
+    }),
+  ),
+  searchQuery: zod.string(),
 });
 
 /**

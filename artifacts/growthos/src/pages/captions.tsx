@@ -9,6 +9,7 @@ import {
   useGenerateWeeklyCalendar,
   useGeneratePostImage,
 } from "@workspace/api-client-react";
+import type { UnsplashPhoto } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -17,7 +18,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import {
   Loader2, PenTool, Copy, CheckCircle2, Calendar, Zap,
-  ChevronDown, ChevronUp, Sparkles, ImageIcon, Download, RefreshCw,
+  ChevronDown, ChevronUp, Sparkles, ImageIcon, Download, RefreshCw, ExternalLink,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
@@ -64,6 +65,7 @@ export default function Captions() {
   const [activeLabel, setActiveLabel] = useState<string | null>(null);
   const [activeCtx, setActiveCtx] = useState<ActiveContext | null>(null);
   const [cachedDays, setCachedDays] = useState<CalendarDay[]>([]);
+  const [selectedPhoto, setSelectedPhoto] = useState<UnsplashPhoto | null>(null);
   const autoFired = useRef(false);
 
   useEffect(() => {
@@ -105,7 +107,6 @@ export default function Captions() {
     }
   }, [calendarMutation.data]);
 
-  // Auto-generate from calendar context passed via localStorage
   useEffect(() => {
     if (!profileId || autoFired.current) return;
     const raw = localStorage.getItem("captionContext");
@@ -135,10 +136,10 @@ export default function Captions() {
     } catch { /* ignore */ }
   }, [profileId]);
 
-  // Reset image when new captions are being generated
   useEffect(() => {
     if (generateCaptions.isPending) {
       generateImage.reset();
+      setSelectedPhoto(null);
     }
   }, [generateCaptions.isPending]);
 
@@ -152,6 +153,7 @@ export default function Captions() {
     setActiveLabel(label);
     setActiveCtx({ description: desc, platform, theme: label, postType });
     generateImage.reset();
+    setSelectedPhoto(null);
     generateCaptions.mutate({
       data: { businessProfileId: profileId, postDescription: desc, platform, tone },
     });
@@ -167,12 +169,14 @@ export default function Captions() {
       postType: "Static",
     });
     generateImage.reset();
+    setSelectedPhoto(null);
     generateCaptions.mutate({ data: { businessProfileId: profileId, ...values } });
   }
 
-  const handleGenerateImage = () => {
+  const handleFindPhotos = () => {
     if (!profileId || !activeCtx || !generateCaptions.data) return;
     const firstCaption = generateCaptions.data.captions[0];
+    setSelectedPhoto(null);
     generateImage.mutate({
       data: {
         businessProfileId: profileId,
@@ -184,12 +188,15 @@ export default function Captions() {
     });
   };
 
-  const downloadImage = () => {
-    if (!generateImage.data?.imageUrl) return;
-    const a = document.createElement("a");
-    a.href = generateImage.data.imageUrl;
-    a.download = `growthos-post-${Date.now()}.png`;
-    a.click();
+  const trackAndDownload = async (photo: UnsplashPhoto) => {
+    try {
+      await fetch(`/api/growthos/track-photo-download`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ downloadLocation: photo.downloadLocation }),
+      });
+    } catch { /* best-effort */ }
+    window.open(photo.url + "&dl=1", "_blank");
   };
 
   const copyToClipboard = (id: number, text: string, hashtags: string[]) => {
@@ -214,6 +221,7 @@ export default function Captions() {
   if (!profileId) return null;
 
   const hasCaptions = !generateCaptions.isPending && !!generateCaptions.data;
+  const photos = generateImage.data?.photos ?? [];
 
   return (
     <div className="p-6 lg:p-8 max-w-6xl mx-auto space-y-8">
@@ -222,7 +230,7 @@ export default function Captions() {
           <PenTool className="w-8 h-8 text-indigo-600" />
           AI Caption Generator
         </h1>
-        <p className="text-slate-500 mt-2">Professional captions + AI-generated post images, powered by your business strategy.</p>
+        <p className="text-slate-500 mt-2">Professional captions + curated stock photos, powered by your business strategy.</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
@@ -445,83 +453,154 @@ export default function Captions() {
                 </div>
               )}
 
-              {/* AI Image Generator Card */}
+              {/* Photo Finder Card */}
               <Card className="border-violet-200 bg-gradient-to-br from-violet-50 to-indigo-50 shadow-sm">
                 <CardHeader className="pb-3 px-6 pt-5 border-b border-violet-100">
                   <CardTitle className="text-base flex items-center gap-2 text-violet-900">
                     <ImageIcon className="w-5 h-5 text-violet-600" />
-                    AI Post Image
-                    <Badge variant="outline" className="ml-auto text-xs bg-violet-100 border-violet-200 text-violet-700">Gemini Vision</Badge>
+                    Post Visuals
+                    <Badge variant="outline" className="ml-auto text-xs bg-white border-violet-200 text-violet-700">Unsplash</Badge>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="p-6">
+
+                  {/* Loading state */}
                   {generateImage.isPending && (
-                    <div className="flex flex-col items-center justify-center py-12 gap-3">
+                    <div className="flex flex-col items-center justify-center py-10 gap-3">
                       <div className="relative">
-                        <div className="w-16 h-16 rounded-full border-4 border-violet-100 border-t-violet-500 animate-spin" />
-                        <ImageIcon className="w-6 h-6 text-violet-400 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+                        <div className="w-14 h-14 rounded-full border-4 border-violet-100 border-t-violet-500 animate-spin" />
+                        <ImageIcon className="w-5 h-5 text-violet-400 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
                       </div>
-                      <p className="text-sm text-violet-700 font-medium">Generating your post image...</p>
-                      <p className="text-xs text-violet-500">This takes 10–20 seconds</p>
+                      <p className="text-sm text-violet-700 font-medium">Finding the best photos for this post...</p>
                     </div>
                   )}
 
-                  {!generateImage.isPending && !generateImage.data && !generateImage.isError && (
+                  {/* Initial state */}
+                  {!generateImage.isPending && photos.length === 0 && !generateImage.isError && (
                     <div className="flex flex-col items-center justify-center py-8 gap-4">
-                      <div className="w-24 h-24 rounded-2xl bg-violet-100 flex items-center justify-center">
-                        <ImageIcon className="w-10 h-10 text-violet-400" />
+                      <div className="w-20 h-20 rounded-2xl bg-violet-100 flex items-center justify-center">
+                        <ImageIcon className="w-9 h-9 text-violet-400" />
                       </div>
                       <div className="text-center">
-                        <p className="text-sm font-medium text-slate-700">Generate a bespoke visual for this post</p>
-                        <p className="text-xs text-slate-400 mt-1">AI creates a professional marketing image matched to your caption and brand</p>
+                        <p className="text-sm font-medium text-slate-700">Find professional stock photos for this post</p>
+                        <p className="text-xs text-slate-400 mt-1">AI picks the best search terms from your caption and brand — curated photos appear in seconds</p>
                       </div>
                       <Button
-                        onClick={handleGenerateImage}
+                        onClick={handleFindPhotos}
                         className="bg-violet-600 hover:bg-violet-700 text-white gap-2"
                         data-testid="button-generate-image"
                       >
                         <ImageIcon className="w-4 h-4" />
-                        Generate Post Image
+                        Find Photos
                       </Button>
                     </div>
                   )}
 
+                  {/* Error state */}
                   {generateImage.isError && (
                     <div className="flex flex-col items-center justify-center py-8 gap-4">
-                      <p className="text-sm text-red-600 font-medium text-center">Image generation failed. Please try again.</p>
-                      <Button onClick={handleGenerateImage} variant="outline" size="sm" className="gap-2">
+                      <p className="text-sm text-red-600 font-medium text-center">Could not load photos. Please try again.</p>
+                      <Button onClick={handleFindPhotos} variant="outline" size="sm" className="gap-2">
                         <RefreshCw className="w-4 h-4" /> Retry
                       </Button>
                     </div>
                   )}
 
-                  {generateImage.data?.imageUrl && (
+                  {/* Photo grid */}
+                  {!generateImage.isPending && photos.length > 0 && (
                     <div className="space-y-4">
-                      <div className="relative rounded-xl overflow-hidden border border-violet-100 shadow-md">
-                        <img
-                          src={generateImage.data.imageUrl}
-                          alt="AI-generated post visual"
-                          className="w-full object-cover"
-                          data-testid="generated-post-image"
-                        />
-                      </div>
-                      <div className="flex gap-2">
-                        <Button
-                          onClick={downloadImage}
-                          className="flex-1 bg-violet-600 hover:bg-violet-700 text-white gap-2"
-                          data-testid="button-download-image"
-                        >
-                          <Download className="w-4 h-4" /> Download Image
-                        </Button>
-                        <Button
-                          onClick={handleGenerateImage}
-                          variant="outline"
-                          className="gap-2 border-violet-200 text-violet-700 hover:bg-violet-50"
-                          disabled={generateImage.isPending}
-                        >
-                          <RefreshCw className="w-4 h-4" /> Regenerate
-                        </Button>
-                      </div>
+                      {generateImage.data?.searchQuery && (
+                        <p className="text-xs text-violet-600 font-medium bg-violet-100 px-3 py-1.5 rounded-lg">
+                          🔍 Searched for: <span className="font-semibold">"{generateImage.data.searchQuery}"</span>
+                        </p>
+                      )}
+
+                      {/* Selected photo preview */}
+                      {selectedPhoto && (
+                        <div className="space-y-3">
+                          <div className="relative rounded-xl overflow-hidden border-2 border-violet-400 shadow-lg">
+                            <img
+                              src={selectedPhoto.url}
+                              alt="Selected post visual"
+                              className="w-full object-cover max-h-72"
+                              data-testid="generated-post-image"
+                            />
+                            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent px-3 py-2">
+                              <a
+                                href={selectedPhoto.photographerProfile + "?utm_source=growthos&utm_medium=referral"}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-white text-xs opacity-80 hover:opacity-100 flex items-center gap-1"
+                              >
+                                Photo by {selectedPhoto.photographer} on Unsplash
+                                <ExternalLink className="w-3 h-3" />
+                              </a>
+                            </div>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button
+                              onClick={() => trackAndDownload(selectedPhoto)}
+                              className="flex-1 bg-violet-600 hover:bg-violet-700 text-white gap-2"
+                              data-testid="button-download-image"
+                            >
+                              <Download className="w-4 h-4" /> Download Photo
+                            </Button>
+                            <Button
+                              onClick={() => setSelectedPhoto(null)}
+                              variant="outline"
+                              className="gap-2 border-violet-200 text-violet-700 hover:bg-violet-50"
+                            >
+                              Change
+                            </Button>
+                            <Button
+                              onClick={handleFindPhotos}
+                              variant="outline"
+                              className="gap-2 border-violet-200 text-violet-700 hover:bg-violet-50"
+                              disabled={generateImage.isPending}
+                            >
+                              <RefreshCw className="w-4 h-4" /> New Search
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Photo grid */}
+                      {!selectedPhoto && (
+                        <>
+                          <p className="text-xs text-slate-500 font-medium">Click a photo to select it</p>
+                          <div className="grid grid-cols-3 gap-2">
+                            {photos.map((photo, i) => (
+                              <button
+                                key={i}
+                                onClick={() => setSelectedPhoto(photo)}
+                                className="relative rounded-lg overflow-hidden border-2 border-transparent hover:border-violet-400 transition-all group aspect-square"
+                                title={`Photo by ${photo.photographer}`}
+                              >
+                                <img
+                                  src={photo.thumbUrl}
+                                  alt={`Stock photo option ${i + 1}`}
+                                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                                />
+                                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
+                                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/50 to-transparent px-1.5 py-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <p className="text-white text-[9px] truncate">{photo.photographer}</p>
+                                </div>
+                              </button>
+                            ))}
+                          </div>
+                          <div className="flex justify-end">
+                            <Button
+                              onClick={handleFindPhotos}
+                              variant="outline"
+                              size="sm"
+                              className="gap-2 text-xs border-violet-200 text-violet-700 hover:bg-violet-50"
+                              disabled={generateImage.isPending}
+                            >
+                              <RefreshCw className="w-3 h-3" /> Search again
+                            </Button>
+                          </div>
+                        </>
+                      )}
                     </div>
                   )}
                 </CardContent>

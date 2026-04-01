@@ -28,3 +28,8 @@ timeoutMs = 20000
 
 [nix]
 channel = "stable-25_05"
+
+[userenv]
+
+[userenv.shared]
+UNSPLASH_ACCESS_KEY = "7NVusSy-bt7od8b418VPRYVqouk-rjZ4b5XNQJKnhpo"

@@ -28,3 +28,4 @@ export * from "./performanceRequest";
 export * from "./performanceResult";
 export * from "./performanceResultTopPost";
 export * from "./platformEngagement";
+export * from "./unsplashPhoto";
